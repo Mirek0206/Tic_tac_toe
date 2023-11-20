@@ -42,4 +42,4 @@ function Login({ setIsAuth }) {
   )
 }
 
-export default Login
+export default Login;

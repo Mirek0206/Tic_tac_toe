@@ -52,4 +52,4 @@ function SignUp({ setIsAuth }) {
   );
 }
 
-export default SignUp
+export default SignUp;
