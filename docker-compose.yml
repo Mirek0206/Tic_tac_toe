@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  server:
+    build: ./path-to-server-directory
+    ports:
+      - "3001:3001"
+    links:
+      - mongo
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/tictactoe
+
+  client:
+    build: ./path-to-client-directory
+    ports:
+      - "3000:3000"
+
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo-data:/data/db

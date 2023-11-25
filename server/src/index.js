@@ -3,10 +3,27 @@ import cors from "cors";
 import { StreamChat } from "stream-chat";
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
+import mongoose from 'mongoose';
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Połączenie z MongoDB
+mongoose.connect('mongodb://mongo:27017/tictactoe', { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB connected...'))
+  .catch(err => console.error(err));
+
+// Schemat i model użytkownika
+const userSchema = new mongoose.Schema({
+  firstName: String,
+  lastName: String,
+  username: String,
+  hashedPassword: String,
+});
+const User = mongoose.model('User', userSchema);
+
 const api_key = "ds3ekagfxmwf";
 const api_secret = "rxze9tn2ackfgpqffathvarq8tctpkq7c6svtp64mqkqqreudmuzf4qr9ar2bpjz";
 const serverClient = StreamChat.getInstance(api_key, api_secret);
@@ -14,10 +31,14 @@ const serverClient = StreamChat.getInstance(api_key, api_secret);
 app.post("/signup", async (req, res) => {
   try {
     const { firstName, lastName, username, password } = req.body;
-    const userId = uuidv4();
     const hashedPassword = await bcrypt.hash(password, 10);
-    const token = serverClient.createToken(userId);
-    res.json({ token, userId, firstName, lastName, username, hashedPassword });
+
+    // Tworzenie nowego użytkownika w MongoDB
+    const newUser = new User({ firstName, lastName, username, hashedPassword });
+    await newUser.save();
+
+    const token = serverClient.createToken(newUser._id);
+    res.json({ token, userId: newUser._id, firstName, lastName, username });
   } catch (error) {
     res.json(error);
   }
@@ -26,23 +47,22 @@ app.post("/signup", async (req, res) => {
 app.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
-    const { users } = await serverClient.queryUsers({ name: username });
-    if (users.length === 0) return res.json({ message: "User not found" });
+    const user = await User.findOne({ username });
 
-    const token = serverClient.createToken(users[0].id);
-    const passwordMatch = await bcrypt.compare(
-      password,
-      users[0].hashedPassword
-    );
+    if (!user) return res.json({ message: "User not found" });
 
+    const passwordMatch = await bcrypt.compare(password, user.hashedPassword);
     if (passwordMatch) {
+      const token = serverClient.createToken(user._id);
       res.json({
         token,
-        firstName: users[0].firstName,
-        lastName: users[0].lastName,
+        firstName: user.firstName,
+        lastName: user.lastName,
         username,
-        userId: users[0].id,
+        userId: user._id,
       });
+    } else {
+      res.json({ message: "Password does not match" });
     }
   } catch (error) {
     res.json(error);
