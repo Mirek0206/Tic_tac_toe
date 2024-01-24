@@ -1,5 +1,5 @@
 # Use an official Node runtime as a parent image
-FROM node:14
+FROM node:21
 
 # Set the working directory in the container
 WORKDIR /usr/src/app
@@ -20,4 +20,4 @@ EXPOSE 3000
 ENV NODE_ENV production
 
 # Command to run your app
-CMD ["node", "src/App.js"]
+CMD ["yarn", "start"]

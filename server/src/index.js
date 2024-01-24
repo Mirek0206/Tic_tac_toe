@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import { StreamChat } from "stream-chat";
-import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
 import mongoose from 'mongoose';
 
@@ -37,10 +36,11 @@ app.post("/signup", async (req, res) => {
     const newUser = new User({ firstName, lastName, username, hashedPassword });
     await newUser.save();
 
-    const token = serverClient.createToken(newUser._id);
-    res.json({ token, userId: newUser._id, firstName, lastName, username });
+    const token = serverClient.createToken(newUser._id.toString());
+    res.json({ token, userId: newUser._id.toString(), firstName, lastName, username });
   } catch (error) {
-    res.json(error);
+    console.error(error);
+    res.status(500).json({ message: "Internal server error", error: error.toString() });
   }
 });
 
@@ -53,19 +53,20 @@ app.post("/login", async (req, res) => {
 
     const passwordMatch = await bcrypt.compare(password, user.hashedPassword);
     if (passwordMatch) {
-      const token = serverClient.createToken(user._id);
+      const token = serverClient.createToken(newUser._id.toString());
       res.json({
         token,
         firstName: user.firstName,
         lastName: user.lastName,
         username,
-        userId: user._id,
+        userId: user._id.toString(),
       });
     } else {
       res.json({ message: "Password does not match" });
     }
   } catch (error) {
-    res.json(error);
+    console.error(error);
+    res.status(500).json({ message: "Internal server error", error: error.toString() });
   }
 });
 
